@@ -6,5 +6,5 @@ The provided code within Jupyter Notebook conducts a thorough examination of neu
 
 <pre>
 *Note:
-Please note that the original neutron scattering data file used for this analysis is not included in this repo!
+Please note that the raw neutron scattering data file used for this analysis is not included in this repo!
 </pre>
