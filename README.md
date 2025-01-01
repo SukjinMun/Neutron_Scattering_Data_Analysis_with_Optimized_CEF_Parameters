@@ -1,5 +1,7 @@
-# Optimized__CEF_Parameters_for_Neutron_Scattering_Data_Analysis
-![download](https://github.com/user-attachments/assets/52ec2a69-50be-4da7-bfac-fab8785d8a21)
+# Neutron Scattering Data Analysis with Optimized CEF Parameters
+
+![download](https://github.com/user-attachments/assets/4b41cfe5-c733-46fe-803d-a5e64474ddfa)
+
 This Jupyter Notebook demonstrates analyzing neutron scattering data for a specific crystalline structure, utilizing crystal field theory to examine complex material behaviors. It begins by initializing and converting crystal field parameters from external references, ensuring that necessary values are correctly set for subsequent calculations. It then compares theoretical spectra derived from these references to experimental datasets, applying background subtraction to isolate meaningful signals and identify discrepancies. Next, the notebook fits the theoretical spectra to the experimental data, capturing insights such as peak positions and widths. A key component is iteratively optimizing crystal field parameters (with a focus on B20) via scipy.optimize.shgo to enhance alignment between calculated and observed energy spectra. Finally, the demo provides visualizations of refined spectra, chi-squared values, and the relationship between B-parameters and fit quality. This delivers a comprehensive overview while preserving confidentiality about the molecule under investigation. Note that this example is only a partial demonstration of the full code.
 <pre>
 *Note:
