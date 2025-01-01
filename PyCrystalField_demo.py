@@ -6,7 +6,7 @@
 %matplotlib inline
 import numpy as np
 import matplotlib.pyplot as plt
-import PyCrystalField as cef
+import PyCrystalField_utils as cef
 from scipy.optimize import curve_fit
 from lmfit.models import LinearModel, PseudoVoigtModel
 import matplotlib as mpl
