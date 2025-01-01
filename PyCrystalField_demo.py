@@ -10,14 +10,18 @@ import PyCrystalField_utils as cef
 from scipy.optimize import curve_fit
 from lmfit.models import LinearModel, PseudoVoigtModel
 import matplotlib as mpl
+from sklearn.linear_model import LinearRegression
+import pandas as pd
+from scipy.optimize import shgo  # <-- SHGO import
 
 mpl.rcParams['font.family'] = 'Arial'
 
 #####################################################
 ## 1) Minimal Parameter Definitions & CF Analysis  ##
+##    (Using literature values from L'Hôtel et al.)##
 #####################################################
 
-# Wybourne parameters in K (from L'hotel et al.)
+# Wybourne parameters in K (from L'Hôtel et al.)
 B20_LH = -190
 B40_LH = 5910
 B43_LH = 110
@@ -27,12 +31,12 @@ B66_LH = -890
 
 # Convert K to meV, and apply Steven's factors (Demo: show partial calculation)
 KtomeV = 1000/11600  # conversion factor
-B20_LH = B20_LH*KtomeV*(-0.158/49.2)
-B40_LH = B40_LH*KtomeV*(-0.0149/408.9)
-B43_LH = B43_LH*KtomeV*(0.105/121.6)
-B60_LH = B60_LH*KtomeV*(-0.00035/148.1)
-B63_LH = B63_LH*KtomeV*(-0.0048/-98.0)
-B66_LH = B66_LH*KtomeV*(-0.005/139.1)
+B20_LH = B20_LH * KtomeV * (-0.158/49.2)
+B40_LH = B40_LH * KtomeV * (-0.0149/408.9)
+B43_LH = B43_LH * KtomeV * (0.105/121.6)
+B60_LH = B60_LH * KtomeV * (-0.00035/148.1)
+B63_LH = B63_LH * KtomeV * (-0.0048/-98.0)
+B66_LH = B66_LH * KtomeV * (-0.005/139.1)
 
 # Put them in a dictionary
 Bdictionary_LH = {
@@ -45,62 +49,119 @@ NdCF1 = cef.CFLevels.Bdict('Nd3+', Bdict=Bdictionary_LH)
 NdCF1.diagonalize()
 print("Eigenvalues (demo):", np.around(NdCF1.eigenvalues, 2))
 
-####################################################
-## 2) Minimal Data Loading & Quick Plot (Demo)    ##
-####################################################
+########################################################
+## 2) Minimal Data Loading, Synthetic Example & Plot  ##
+########################################################
 
-# (In the real notebook, we loaded dt_cropped_x,y,z from a file.)
-# For the DEMO, let's just generate some synthetic data:
+# Generate some synthetic data (for demo purpose, here we are instead using simulated experimental data)
 x_demo = np.linspace(0,120,200)
 y_demo = np.exp(-(x_demo-30)**2/100) + 0.05*np.random.rand(len(x_demo))
 z_demo = 0.1*np.ones_like(x_demo)
 
+# Plot the synthetic data and mock CF peaks
 plt.figure(figsize=(6,3))
-plt.errorbar(x_demo, y_demo, z_demo, marker='.', color='green', ls='none', capsize=2, label='demo data')
-plt.bar(NdCF1.eigenvalues, 5*np.ones(len(NdCF1.eigenvalues)), color='r', width=1, label="demo CF peaks")
+plt.errorbar(x_demo, y_demo, z_demo, marker='.', color='green', ls='none',
+             capsize=2, label='demo data')
+plt.bar(NdCF1.eigenvalues,
+        5*np.ones(len(NdCF1.eigenvalues)),
+        color='r', width=1, label="demo CF peaks")
 plt.xlim(0, 60)
 plt.title("Demo: CF Levels & Synthetic Data")
 plt.legend()
 plt.show()
 
-####################################################
-## 3) Minimal Fit Demo (Polynomial as Example)     ##
-####################################################
+#########################################################
+## 3) Background Subtraction & Comparison to Theory    ##
+#########################################################
 
-from sklearn.linear_model import LinearRegression
-import pandas as pd
+# Simple placeholder for background subtraction
+def subtract_background(intensity, background_level=0.05):
+    return intensity - background_level
 
-# (In the real notebook, we used actual columns from data files.)
-# Let's wrap synthetic data into a small dataframe
-df_demo = pd.DataFrame({"Energy (meV)": x_demo,
-                        "Intensity (a.u.)": y_demo,
-                        "Intensity Uncertainty (a.u.)": z_demo})
+# Apply it to the synthetic data
+y_demo_sub = subtract_background(y_demo)
 
-lm = LinearRegression()
-X_demo = df_demo[["Energy (meV)"]]
-Y_demo = df_demo["Intensity (a.u.)"]
-lm.fit(X_demo, Y_demo)
-
-print("Demo linear fit slope:", lm.coef_)
-print("Demo linear fit intercept:", lm.intercept_)
-
-############################################################
-## 4) Show a quick polynomial fit on the synthetic data   ##
-############################################################
-
-f = np.polyfit(x_demo, y_demo, 4)  # lower polynomial order for demo
-p = np.poly1d(f)
-print("Demo polyfit coefficients:\n", p)
+# Mock theoretical spectrum for comparison
+theory_spectrum = np.exp(-(x_demo - 32)**2 / 150)  # purely illustrative
 
 plt.figure(figsize=(6,3))
-plt.errorbar(x_demo, y_demo, z_demo, marker='.', ls='none', color='green', label='demo data')
-plt.plot(x_demo, p(x_demo), 'r-', label='demo poly fit')
-plt.title("Demo Polynomial Fit")
+plt.plot(x_demo, y_demo_sub, 'g.-', label='data (background sub)')
+plt.plot(x_demo, theory_spectrum, 'b-', label='mock theory')
+plt.title("Demo Comparison: Data vs. Mock Theory")
 plt.legend()
 plt.show()
 
-##############################################
-## 5) Demo End: Minimal Notebook Workflow   ##
-##############################################
+######################################################
+## 4) Fit to Identify Peak Positions and Widths     ##
+######################################################
 
-print("\nNotebook demo complete. In a real notebook, further sections would follow.")
+# Example polynomial fit
+f_sub = np.polyfit(x_demo, y_demo_sub, 4)  # polynomial order 4
+p_sub = np.poly1d(f_sub)
+
+plt.figure(figsize=(6,3))
+plt.plot(x_demo, y_demo_sub, 'g.-', label='data (bg sub)')
+plt.plot(x_demo, p_sub(x_demo), 'r-', label='polynomial fit')
+plt.title("Demo Polynomial Fit (After Background Subtraction)")
+plt.legend()
+plt.show()
+
+# Example Pseudo-Voigt fit for a single peak
+pseudo_model = PseudoVoigtModel()
+params = pseudo_model.guess(y_demo_sub, x=x_demo)
+result = pseudo_model.fit(y_demo_sub, params, x=x_demo)
+print("\nDemo Pseudo-Voigt fit results:")
+print(result.fit_report())
+
+#########################################################
+## 5) Iterative Optimization of CF Parameters (SHGO)   ##
+#########################################################
+
+def objective_function(b20):
+    """
+    Example objective function that, for a given B20,
+    re-diagonalizes the CF levels and computes chi-squared 
+    vs. the data. In reality, we'd recast Bdict, recalc
+    the theoretical spectrum, and compare with data.
+    """
+    # Copy the original dictionary for demonstration
+    Bdict_temp = Bdictionary_LH.copy()
+    Bdict_temp['B20'] = b20
+    
+    # Re-diagonalize with the new B20
+    temp_CF = cef.CFLevels.Bdict('Nd3+', Bdict=Bdict_temp)
+    temp_CF.diagonalize()
+    
+    # Generate a mock "theoretical" spectrum and compare to data
+    # (purely synthetic for demonstration)
+    theory_temp = np.exp(-(x_demo - 30 - b20)**2 / 100)
+    
+    # Simple chi-square calculation for demonstration
+    chi_sq = np.sum(((y_demo_sub - theory_temp) / z_demo)**2)
+    return chi_sq
+
+# Use SHGO with a small range for the B20 parameter
+res = shgo(
+    func=objective_function,
+    bounds=[(-0.5*abs(Bdictionary_LH['B20']), 0.5*abs(Bdictionary_LH['B20']))],
+    n=20  # small number for demonstration
+)
+print("\nSHGO demo optimization result for B20:", res.x)
+print("Minimum chi-square found:", res.fun)
+
+###########################################################
+## 6) Final Visualizations & Relation of B-parameters    ##
+###########################################################
+
+# Sample multiple B20 values around the optimum to visualize
+b20_values = np.linspace(-0.3, 0.3, 30) * abs(Bdictionary_LH['B20'])
+chisq_values = [objective_function(val) for val in b20_values]
+
+plt.figure(figsize=(6,3))
+plt.plot(b20_values, chisq_values, 'o-')
+plt.axvline(res.x[0], color='r', linestyle='--', label='Optimal B20')
+plt.title("Demo: B20 vs. Chi-Squared")
+plt.xlabel("B20 (meV, scaled)")
+plt.ylabel("Chi-Squared")
+plt.legend()
+plt.show()
